@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Eye, BookOpen, Layers, Sun, Mountain, Book, MoveHorizontal, MoveVertical, Glasses, CheckCircle, AlertCircle, Hand, Laptop, Contact, ArrowRightLeft, Calculator, Home, Building } from 'lucide-react';
+import { Eye, BookOpen, Layers, Sun, Mountain, Book, MoveHorizontal, MoveVertical, Glasses, CheckCircle, AlertCircle, Hand, Laptop, Contact, ArrowRightLeft, Calculator, Home, Building, Moon, Palette } from 'lucide-react';
 
 // --- 全局樣式注入 ---
 const GlobalStyles = () => (
@@ -749,17 +749,23 @@ const FiltersPage = () => {
         none: { class: '', label: '無濾鏡' },
         blue: { class: 'sepia-[30%] contrast-90 brightness-95 saturate-150', label: '抗藍光 (暖色)' },
         photochromic: { class: 'brightness-50 contrast-125 grayscale-[20%]', label: '變色片 (戶外)' },
-        polarized: { class: 'contrast-125 saturate-125', label: '偏光鏡 (消反光)' }
+        polarized: { class: 'contrast-125 saturate-125', label: '偏光鏡 (消反光)' },
+        night: { class: 'sepia brightness-110 contrast-125 saturate-150', label: '夜間駕駛 (增強對比)' },
+        colorblind: { class: 'contrast-150 saturate-200', label: '色覺輔助 (增強紅綠)' }
     };
 
     // 根據濾鏡類型切換情境圖片
     const getFilterImage = () => {
         if (activeFilter === 'blue') {
-            // 抗藍光模式：展示室內辦公環境 (筆電、白桌)，最能體現色溫變化
-            return "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80"; 
+            return "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80"; // Office
         }
-        // 其他模式：展示戶外/海灘，適合偏光和變色片
-        return "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; 
+        if (activeFilter === 'night') {
+            return "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=800&q=80"; // Night City
+        }
+        if (activeFilter === 'colorblind') {
+            return "https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=800&q=80"; // Colorful Nature (Trees) or Balloons
+        }
+        return "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // Beach
     };
 
     return (
@@ -775,7 +781,7 @@ const FiltersPage = () => {
                         src={getFilterImage()}
                         className={`w-full h-full object-cover transition-all duration-700 ${filters[activeFilter].class}`}
                         alt="Scene"
-                        key={activeFilter} // 強制重新渲染以觸發轉場動畫
+                        key={activeFilter} 
                     />
                     
                     {activeFilter === 'polarized' && (
@@ -788,6 +794,20 @@ const FiltersPage = () => {
                          <div className="absolute bottom-4 left-4 bg-yellow-900/60 text-yellow-50 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm animate-fade-in">
                             <Laptop className="w-3 h-3 inline-block mr-1" />
                             過濾螢幕冷光，畫面變柔和
+                        </div>
+                    )}
+
+                    {activeFilter === 'night' && (
+                         <div className="absolute bottom-4 left-4 bg-yellow-500/60 text-white px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm animate-fade-in">
+                            <Moon className="w-3 h-3 inline-block mr-1" />
+                            黃色鏡片濾除散射藍光，增強夜間對比
+                        </div>
+                    )}
+
+                    {activeFilter === 'colorblind' && (
+                         <div className="absolute bottom-4 left-4 bg-red-500/60 text-white px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm animate-fade-in">
+                            <Palette className="w-3 h-3 inline-block mr-1" />
+                            調節光譜，讓紅綠色彩更分明
                         </div>
                     )}
                     
@@ -820,6 +840,16 @@ const FiltersPage = () => {
                         className={`p-3 rounded-xl border text-sm font-medium transition-all ${activeFilter === 'polarized' ? 'bg-teal-100 border-teal-300 text-teal-800' : 'bg-white text-slate-600 hover:bg-teal-50'}`}>
                         偏光太陽眼鏡
                     </button>
+                    <button 
+                        onClick={() => setActiveFilter('night')}
+                        className={`p-3 rounded-xl border text-sm font-medium transition-all ${activeFilter === 'night' ? 'bg-yellow-500 text-white border-yellow-600' : 'bg-white text-slate-600 hover:bg-yellow-50'}`}>
+                        夜間駕駛眼鏡
+                    </button>
+                    <button 
+                        onClick={() => setActiveFilter('colorblind')}
+                        className={`p-3 rounded-xl border text-sm font-medium transition-all ${activeFilter === 'colorblind' ? 'bg-pink-500 text-white border-pink-600' : 'bg-white text-slate-600 hover:bg-pink-50'}`}>
+                        色覺輔助眼鏡
+                    </button>
                 </div>
 
                     <div className="mt-4 p-4 bg-slate-50 rounded-xl text-sm text-slate-600 leading-relaxed">
@@ -827,6 +857,8 @@ const FiltersPage = () => {
                     {activeFilter === 'photochromic' && "變色鏡片含有鹵化銀分子，遇到紫外線(UV)會迅速變黑，阻擋強光；回到室內則恢復透明。"}
                     {activeFilter === 'blue' && "抗藍光鏡片會過濾掉 380-500nm 的高能量藍光，畫面會略微偏黃，能減少螢幕對眼睛的刺激。"}
                     {activeFilter === 'polarized' && "偏光鏡就像百葉窗，只讓特定方向的光通過，能有效濾除路面、水面反射的刺眼雜光。"}
+                    {activeFilter === 'night' && "夜間駕駛眼鏡通常為黃色，能濾除波長短的藍光（易散射眩光），提升夜間行車的對比度與清晰度。"}
+                    {activeFilter === 'colorblind' && "色覺輔助眼鏡透過光譜濾波技術，調整進入眼睛的光線比例，幫助紅綠色弱人士更容易分辨色彩。"}
                 </div>
             </div>
         </div>
