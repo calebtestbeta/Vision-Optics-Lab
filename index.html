@@ -21,6 +21,7 @@
 
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
+        /* 避免內容閃爍 */
         body:not(:defined) { opacity: 0; transition: opacity 0.2s; }
     </style>
 </head>
@@ -30,7 +31,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- 1. 內建圖標組件 ---
+        // --- 1. 內建圖標組件 (避免依賴外部庫導致錯誤) ---
         const IconBase = ({ children, className, ...props }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
                 {children}
@@ -116,25 +117,29 @@
             );
         };
 
-        // --- 4. 屈光實驗用眼球模型 ---
+        // --- 4. 眼球模型 (修正焦點座標) ---
         const EyeModel = ({ refractiveError, lensPower, correctionType, astigmatism, correctAstigmatism, effectivePower }) => {
+            // 修正：視網膜位置 (眼球後壁)
             const retinaX = 292; 
             const netError = refractiveError - effectivePower;
             
+            // 計算焦點位置
             let focalPointX = retinaX;
             if (netError < 0) focalPointX = retinaX - (Math.abs(netError) * 12);
             else if (netError > 0) focalPointX = retinaX + (Math.abs(netError) * 12);
 
+            // 散光邏輯
             const hasResidualAstigmatism = astigmatism > 0 && !correctAstigmatism;
             const secondaryFocalPointX = hasResidualAstigmatism ? focalPointX - (astigmatism * 15) : focalPointX;
 
             let rayColor = "#FFD700";
             const isPrimaryFocused = Math.abs(focalPointX - retinaX) < 5;
             const isSecondaryFocused = Math.abs(secondaryFocalPointX - retinaX) < 5;
+            
             if (isPrimaryFocused && isSecondaryFocused) {
-                rayColor = "#34D399"; 
+                rayColor = "#34D399"; // 綠色 (清晰)
             } else {
-                rayColor = "#EF4444"; 
+                rayColor = "#EF4444"; // 紅色 (模糊)
             }
 
             const isConcave = lensPower < -0.1;
@@ -148,21 +153,26 @@
                     : `M ${lensX} 35 Q ${lensX+20} 75 ${lensX} 115 L ${lensX+5} 115 Q ${lensX+25} 75 ${lensX+5} 35 Z`);
 
             return (
-                <div className="w-full bg-slate-900 rounded-xl p-4 shadow-inner overflow-hidden relative" style={{ height: '200px' }}>
+                <div className="w-full bg-slate-900 rounded-xl p-4 shadow-inner overflow-hidden relative" style={{ height: '240px' }}>
                     <svg viewBox="0 0 350 150" className="w-full h-full">
+                        {/* 眼球輪廓 (中心 cx=230, rx=65 -> 右邊緣約 295) */}
                         <ellipse cx="230" cy="75" rx="65" ry="65" fill="#f1f5f9" stroke="#94a3b8" strokeWidth="2" />
                         <path d="M 175 75 Q 165 25 230 10" fill="none" stroke="#cbd5e1" strokeWidth="1" opacity="0.5" />
                         <path d="M 175 75 Q 165 125 230 140" fill="none" stroke="#cbd5e1" strokeWidth="1" opacity="0.5" />
                         
+                        {/* 視網膜 (紅色弧線) */}
                         <path d="M 285 45 A 60 60 0 0 1 285 105" fill="none" stroke="#ef4444" strokeWidth="3" opacity="0.8" />
                         <text x="315" y="78" fill="#ef4444" fontSize="10" fontWeight="bold">視網膜</text>
                         
+                        {/* 水晶體 */}
                         <ellipse cx="170" cy="75" rx="8" ry="40" fill="#93c5fd" opacity="0.8" />
 
+                        {/* 鏡片 */}
                         {(isConcave || isConvex) && (
                             <path d={lensPath} fill="#bae6fd" stroke="#60a5fa" strokeWidth="1" opacity="0.8" />
                         )}
 
+                        {/* 頂點距離標示 */}
                         {correctionType === 'glasses' && (isConcave || isConvex) && (
                             <g>
                                 <line x1="135" y1="130" x2="165" y2="130" stroke="white" strokeWidth="1" strokeDasharray="2,2" />
@@ -172,6 +182,9 @@
                             </g>
                         )}
 
+                        {/* --- 光線路徑繪製 (Enhanced for Astigmatism) --- */}
+                        
+                        {/* 1. 第一組光線 (實線 - 代表垂直子午線) */}
                         <g stroke={rayColor} strokeWidth="2" opacity="0.9">
                             <line x1="0" y1="45" x2={(isConcave || isConvex) ? lensX : 170} y2="45" />
                             {(isConcave || isConvex) && <line x1={lensX} y1="45" x2="170" y2="45" strokeDasharray="2,2"/>}
@@ -182,18 +195,24 @@
                             <line x1="170" y1="105" x2={focalPointX} y2="75" />
                         </g>
 
+                        {/* 2. 第二組光線 (虛線 - 代表水平子午線 - 散光時出現) */}
                         {hasResidualAstigmatism && (
                             <g stroke="#60A5FA" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.8">
+                                {/* 為了視覺清楚，稍微錯開一點起始位置或直接重疊但分岔 */}
                                 <line x1="170" y1="48" x2={secondaryFocalPointX} y2="75" />
                                 <line x1="170" y1="102" x2={secondaryFocalPointX} y2="75" />
                             </g>
                         )}
                         
+                        {/* 中心軸線 */}
                         <line x1="0" y1="75" x2={Math.max(focalPointX, secondaryFocalPointX)} y2="75" stroke={rayColor} strokeWidth="1" opacity="0.3" />
 
+                        {/* 焦點標記 */}
+                        {/* 主焦點 */}
                         <circle cx={focalPointX} cy="75" r="3" fill={rayColor} className="animate-pulse" />
                         <text x={focalPointX} y="95" fill={rayColor} fontSize="8" textAnchor="middle">焦點1</text>
 
+                        {/* 散光副焦點 (如果有) */}
                         {hasResidualAstigmatism && (
                             <g>
                                 <circle cx={secondaryFocalPointX} cy="75" r="3" fill="#60A5FA" />
@@ -207,89 +226,61 @@
             )
         }
 
-        // --- 5. 老花眼專用眼球模型 (新增) ---
+        // --- 5. 老花眼專用眼球模型 ---
         const PresbyopiaEyeModel = ({ age, viewDistance, hasGlasses, isBlurry }) => {
             const retinaX = 292;
-            // 晶狀體彈性係數 (模擬)
             const elasticity = Math.max(0, 1 - (age - 20) / 40); 
             
-            // 晶狀體形狀變化
-            // 初始(看遠/放鬆): 扁平, 厚度小
-            // 目標(看近/用力): 圓潤, 厚度大
             const minThickness = 5; 
-            const maxThickness = 15; // 理想的最大調節厚度
+            const maxThickness = 15; 
             
-            // 實際厚度
             let currentThickness = minThickness;
             if (viewDistance === 'near') {
-                // 嘗試調節: 基礎 + (能力範圍 * 彈性)
                 currentThickness = minThickness + (maxThickness - minThickness) * elasticity;
             }
 
-            // 焦點計算
-            let focalPointX = retinaX; // 預設看遠是清楚的 (假設無遠視)
-            let rayColor = "#34D399"; // 綠色
+            let focalPointX = retinaX; 
+            let rayColor = "#34D399"; 
 
             if (viewDistance === 'near') {
-                // 光線來源是近處，需要晶狀體變厚(強屈光)來聚焦
-                // 理想需要的屈光力對應 maxThickness
-                // 如果 currentThickness < maxThickness，聚焦能力不足，焦點會跑到視網膜後方
-                if (currentThickness < maxThickness * 0.9) { // 0.9 是一個容許值
-                    // 聚焦不足，焦點後移
-                    // 偏移量跟 (理想 - 實際) 成正比
+                if (currentThickness < maxThickness * 0.9) { 
                     const deficit = maxThickness - currentThickness;
                     focalPointX = retinaX + deficit * 8; 
-                    rayColor = "#EF4444"; // 紅色 (模糊)
+                    rayColor = "#EF4444"; 
                 }
             }
 
-            // 加上老花眼鏡 (凸透鏡) 輔助
             if (viewDistance === 'near' && hasGlasses) {
-                // 眼鏡提供額外屈光力，將焦點拉回視網膜
                 focalPointX = retinaX;
                 rayColor = "#34D399";
             }
 
-            // 視覺化晶狀體路徑 (根據厚度變化)
-            // 使用 Q 曲線模擬晶狀體鼓起
-            // 上下頂點固定 Y=35, Y=115. 中心 X=170.
-            // 控制點 X 隨厚度變化
             const lensPath = `M 170 35 Q ${170 + currentThickness} 75 170 115 Q ${170 - currentThickness} 75 170 35 Z`;
 
-            // 光線起點與路徑
-            // 看遠：平行光 (Y=45, Y=105)
-            // 看近：發散光 (從 X=0, Y=75 出發，到達晶狀體/眼鏡)
             const startY_Top = viewDistance === 'far' ? 45 : 75;
             const startY_Bottom = viewDistance === 'far' ? 105 : 75;
             const lensEntryX = hasGlasses ? 135 : 170;
             
-            // 眼鏡參數 (凸透鏡)
             const glassPath = `M 135 35 Q 145 75 135 115 L 130 115 Q 140 75 130 35 Z`;
 
             return (
                 <div className="w-full bg-slate-900 rounded-xl p-4 shadow-inner overflow-hidden relative" style={{ height: '240px' }}>
                     <svg viewBox="0 0 350 150" className="w-full h-full">
-                        {/* 眼球 */}
                         <ellipse cx="230" cy="75" rx="65" ry="65" fill="#f1f5f9" stroke="#94a3b8" strokeWidth="2" />
                         <path d="M 175 75 Q 165 25 230 10" fill="none" stroke="#cbd5e1" strokeWidth="1" opacity="0.5" />
                         <path d="M 175 75 Q 165 125 230 140" fill="none" stroke="#cbd5e1" strokeWidth="1" opacity="0.5" />
                         <path d="M 285 45 A 60 60 0 0 1 285 105" fill="none" stroke="#ef4444" strokeWidth="3" opacity="0.8" />
                         <text x="315" y="78" fill="#ef4444" fontSize="10" fontWeight="bold">視網膜</text>
 
-                        {/* 晶狀體 (動態形狀) */}
                         <path d={lensPath} fill="#93c5fd" opacity="0.9" stroke="#3b82f6" strokeWidth="1" />
 
-                        {/* 睫狀肌示意 (上下兩塊，隨距離移動模擬收縮) */}
-                        {/* 放鬆(看遠): 離得遠 / 收縮(看近): 靠得近 */}
                         <rect x="162" y={viewDistance === 'near' ? 20 : 10} width="16" height="10" rx="2" fill="#fca5a5" />
                         <rect x="162" y={viewDistance === 'near' ? 120 : 130} width="16" height="10" rx="2" fill="#fca5a5" />
-                        {/* 懸韌帶 (連接肌肉與晶狀體) */}
                         <line x1="170" y1={viewDistance === 'near' ? 30 : 20} x2="170" y2="35" stroke="#94a3b8" strokeWidth="1" />
                         <line x1="170" y1={viewDistance === 'near' ? 120 : 130} x2="170" y2="115" stroke="#94a3b8" strokeWidth="1" />
                         
                         <text x="190" y="25" fill="#fca5a5" fontSize="8">睫狀肌</text>
 
-                        {/* 老花眼鏡 */}
                         {hasGlasses && (
                             <g>
                                 <path d={glassPath} fill="#bae6fd" stroke="#60a5fa" strokeWidth="1" opacity="0.8" />
@@ -297,23 +288,18 @@
                             </g>
                         )}
 
-                        {/* 光線 */}
                         <g stroke={rayColor} strokeWidth="2" opacity="0.8">
-                            {/* 上光束 */}
                             <line x1="0" y1={viewDistance === 'far' ? 45 : 75} x2={hasGlasses ? 135 : 165} y2="45" />
                             {hasGlasses && <line x1="135" y1="45" x2="165" y2="45" strokeDasharray="2,2" />}
                             <line x1="165" y1="45" x2={focalPointX} y2="75" />
 
-                            {/* 下光束 */}
                             <line x1="0" y1={viewDistance === 'far' ? 105 : 75} x2={hasGlasses ? 135 : 165} y2="105" />
                             {hasGlasses && <line x1="135" y1="105" x2="165" y2="105" strokeDasharray="2,2" />}
                             <line x1="165" y1="105" x2={focalPointX} y2="75" />
                         </g>
                         
-                        {/* 光源點 (看近時) */}
                         {viewDistance === 'near' && <circle cx="0" cy="75" r="4" fill="white" />}
 
-                        {/* 焦點 */}
                         <circle cx={focalPointX} cy="75" r="3" fill={rayColor} className="animate-pulse" />
 
                         <text x="10" y="140" fill="white" fontSize="10">
@@ -390,9 +376,11 @@
             const isMyopia = eyeCondition < 0;
             const isHyperopia = eyeCondition > 0;
             const isNormal = Math.abs(eyeCondition) <= 0.5;
+            
             let lensMin = 0, lensMax = 0;
-            if (isMyopia) { lensMin = -10; lensMax = 0; }
-            if (isHyperopia) { lensMin = 0; lensMax = 10; } 
+            // 擴大眼鏡度數範圍，以滿足高度近視的頂點距離換算需求
+            if (isMyopia) { lensMin = -14; lensMax = 0; } 
+            if (isHyperopia) { lensMin = 0; lensMax = 14; } 
 
             const sceneImage = scene === 'outdoor' 
                 ? "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
@@ -537,7 +525,6 @@
                                             {showVertexInfo ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                                         </button>
                                         
-                                        {/* 頂點距離資訊永遠存在，只是用 CSS 隱藏/顯示，或保留在 DOM 中 */}
                                         <div className={`mt-2 bg-slate-50 rounded-lg p-3 text-xs animate-fade-in ${showVertexInfo ? 'block' : 'hidden'}`}>
                                             <p className="mb-2 text-slate-500">眼鏡距角膜 12mm，隱眼貼合角膜 (0mm)，高度數時需換算。</p>
                                             <div className="grid grid-cols-2 gap-2 text-center">
@@ -583,7 +570,6 @@
                             老花眼：失去的調節力
                         </h2>
                         
-                        {/* 使用新的老花眼專用模型 */}
                         <PresbyopiaEyeModel 
                             age={age}
                             viewDistance={viewDistance}
