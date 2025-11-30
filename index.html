@@ -21,7 +21,6 @@
 
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
-        /* 避免內容閃爍 */
         body:not(:defined) { opacity: 0; transition: opacity 0.2s; }
     </style>
 </head>
@@ -58,7 +57,9 @@
         const Building = (props) => <IconBase {...props}><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></IconBase>;
         const Moon = (props) => <IconBase {...props}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></IconBase>;
         const Palette = (props) => <IconBase {...props}><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></IconBase>;
-
+        const Info = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></IconBase>;
+        const ChevronDown = (props) => <IconBase {...props}><path d="m6 9 6 6 6-6"/></IconBase>;
+        const ChevronUp = (props) => <IconBase {...props}><path d="m18 15-6-6-6 6"/></IconBase>;
 
         // --- 2. 全局樣式 ---
         const GlobalStyles = () => (
@@ -70,7 +71,6 @@
                 .slider-thumb::-moz-range-thumb {
                     width: 24px; height: 24px; background: #3b82f6; cursor: pointer; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
                 }
-                /* 修復 Slider 警告：改用標準的 writing-mode */
                 .writing-mode-vertical {
                     writing-mode: vertical-lr;
                     direction: rtl;
@@ -84,7 +84,7 @@
                     to { opacity: 1; transform: translateY(0); }
                 }
                 .animate-fade-in {
-                    animation: fade-in 0.5s ease-out forwards;
+                    animation: fade-in 0.3s ease-out forwards;
                 }
             `}</style>
         );
@@ -116,25 +116,29 @@
             );
         };
 
-        // --- 4. 眼球模型 ---
+        // --- 4. 屈光實驗用眼球模型 ---
         const EyeModel = ({ refractiveError, lensPower, correctionType, astigmatism, correctAstigmatism, effectivePower }) => {
-            const retinaX = 250;
+            const retinaX = 292; 
             const netError = refractiveError - effectivePower;
             
             let focalPointX = retinaX;
-            if (netError < 0) focalPointX = retinaX - (Math.abs(netError) * 15);
-            else if (netError > 0) focalPointX = retinaX + (Math.abs(netError) * 15);
+            if (netError < 0) focalPointX = retinaX - (Math.abs(netError) * 12);
+            else if (netError > 0) focalPointX = retinaX + (Math.abs(netError) * 12);
 
             const hasResidualAstigmatism = astigmatism > 0 && !correctAstigmatism;
-            const secondaryFocalPointX = hasResidualAstigmatism ? focalPointX - (astigmatism * 10) : focalPointX;
+            const secondaryFocalPointX = hasResidualAstigmatism ? focalPointX - (astigmatism * 15) : focalPointX;
 
             let rayColor = "#FFD700";
-            if (Math.abs(netError) < 0.5 && !hasResidualAstigmatism) rayColor = "#34D399";
-            else rayColor = "#EF4444";
+            const isPrimaryFocused = Math.abs(focalPointX - retinaX) < 5;
+            const isSecondaryFocused = Math.abs(secondaryFocalPointX - retinaX) < 5;
+            if (isPrimaryFocused && isSecondaryFocused) {
+                rayColor = "#34D399"; 
+            } else {
+                rayColor = "#EF4444"; 
+            }
 
             const isConcave = lensPower < -0.1;
             const isConvex = lensPower > 0.1;
-
             const lensX = correctionType === 'contact' ? 160 : 125;
             
             const lensPath = correctionType === 'contact' 
@@ -144,13 +148,14 @@
                     : `M ${lensX} 35 Q ${lensX+20} 75 ${lensX} 115 L ${lensX+5} 115 Q ${lensX+25} 75 ${lensX+5} 35 Z`);
 
             return (
-                <div className="w-full bg-slate-900 rounded-xl p-4 shadow-inner overflow-hidden relative" style={{ height: '220px' }}>
-                    <svg viewBox="0 0 300 150" className="w-full h-full">
+                <div className="w-full bg-slate-900 rounded-xl p-4 shadow-inner overflow-hidden relative" style={{ height: '200px' }}>
+                    <svg viewBox="0 0 350 150" className="w-full h-full">
                         <ellipse cx="230" cy="75" rx="65" ry="65" fill="#f1f5f9" stroke="#94a3b8" strokeWidth="2" />
                         <path d="M 175 75 Q 165 25 230 10" fill="none" stroke="#cbd5e1" strokeWidth="1" opacity="0.5" />
                         <path d="M 175 75 Q 165 125 230 140" fill="none" stroke="#cbd5e1" strokeWidth="1" opacity="0.5" />
-                        <path d="M 285 45 A 60 60 0 0 1 285 105" fill="none" stroke="#ef4444" strokeWidth="3" opacity="0.6" />
-                        <text x="280" y="35" fill="#ef4444" fontSize="8" textAnchor="middle">視網膜</text>
+                        
+                        <path d="M 285 45 A 60 60 0 0 1 285 105" fill="none" stroke="#ef4444" strokeWidth="3" opacity="0.8" />
+                        <text x="315" y="78" fill="#ef4444" fontSize="10" fontWeight="bold">視網膜</text>
                         
                         <ellipse cx="170" cy="75" rx="8" ry="40" fill="#93c5fd" opacity="0.8" />
 
@@ -167,37 +172,159 @@
                             </g>
                         )}
 
-                        <g stroke={rayColor} strokeWidth="2" opacity="0.8">
+                        <g stroke={rayColor} strokeWidth="2" opacity="0.9">
                             <line x1="0" y1="45" x2={(isConcave || isConvex) ? lensX : 170} y2="45" />
                             {(isConcave || isConvex) && <line x1={lensX} y1="45" x2="170" y2="45" strokeDasharray="2,2"/>}
                             <line x1="170" y1="45" x2={focalPointX} y2="75" />
-                            
-                            {hasResidualAstigmatism && (
-                                <line x1="170" y1="45" x2={secondaryFocalPointX} y2="75" stroke={rayColor} strokeWidth="1" strokeDasharray="4,2" opacity="0.6" />
-                            )}
 
                             <line x1="0" y1="105" x2={(isConcave || isConvex) ? lensX : 170} y2="105" />
                             {(isConcave || isConvex) && <line x1={lensX} y1="105" x2="170" y2="105" strokeDasharray="2,2"/>}
                             <line x1="170" y1="105" x2={focalPointX} y2="75" />
-
-                            {hasResidualAstigmatism && (
-                                <line x1="170" y1="105" x2={secondaryFocalPointX} y2="75" stroke={rayColor} strokeWidth="1" strokeDasharray="4,2" opacity="0.6" />
-                            )}
-                            
-                            <line x1="0" y1="75" x2={focalPointX} y2="75" opacity="0.5" />
                         </g>
 
-                        <circle cx={focalPointX} cy="75" r="3" fill={rayColor} className="animate-pulse" />
                         {hasResidualAstigmatism && (
-                            <circle cx={secondaryFocalPointX} cy="75" r="2" fill={rayColor} opacity="0.5" />
+                            <g stroke="#60A5FA" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.8">
+                                <line x1="170" y1="48" x2={secondaryFocalPointX} y2="75" />
+                                <line x1="170" y1="102" x2={secondaryFocalPointX} y2="75" />
+                            </g>
                         )}
+                        
+                        <line x1="0" y1="75" x2={Math.max(focalPointX, secondaryFocalPointX)} y2="75" stroke={rayColor} strokeWidth="1" opacity="0.3" />
+
+                        <circle cx={focalPointX} cy="75" r="3" fill={rayColor} className="animate-pulse" />
+                        <text x={focalPointX} y="95" fill={rayColor} fontSize="8" textAnchor="middle">焦點1</text>
+
+                        {hasResidualAstigmatism && (
+                            <g>
+                                <circle cx={secondaryFocalPointX} cy="75" r="3" fill="#60A5FA" />
+                                <text x={secondaryFocalPointX} y="60" fill="#60A5FA" fontSize="8" textAnchor="middle">焦點2 (散光)</text>
+                            </g>
+                        )}
+                        
                         <text x="10" y="20" fill="white" fontSize="10">平行光源</text>
                     </svg>
                 </div>
             )
         }
 
-        // --- 5. 屈光不正頁面 ---
+        // --- 5. 老花眼專用眼球模型 (新增) ---
+        const PresbyopiaEyeModel = ({ age, viewDistance, hasGlasses, isBlurry }) => {
+            const retinaX = 292;
+            // 晶狀體彈性係數 (模擬)
+            const elasticity = Math.max(0, 1 - (age - 20) / 40); 
+            
+            // 晶狀體形狀變化
+            // 初始(看遠/放鬆): 扁平, 厚度小
+            // 目標(看近/用力): 圓潤, 厚度大
+            const minThickness = 5; 
+            const maxThickness = 15; // 理想的最大調節厚度
+            
+            // 實際厚度
+            let currentThickness = minThickness;
+            if (viewDistance === 'near') {
+                // 嘗試調節: 基礎 + (能力範圍 * 彈性)
+                currentThickness = minThickness + (maxThickness - minThickness) * elasticity;
+            }
+
+            // 焦點計算
+            let focalPointX = retinaX; // 預設看遠是清楚的 (假設無遠視)
+            let rayColor = "#34D399"; // 綠色
+
+            if (viewDistance === 'near') {
+                // 光線來源是近處，需要晶狀體變厚(強屈光)來聚焦
+                // 理想需要的屈光力對應 maxThickness
+                // 如果 currentThickness < maxThickness，聚焦能力不足，焦點會跑到視網膜後方
+                if (currentThickness < maxThickness * 0.9) { // 0.9 是一個容許值
+                    // 聚焦不足，焦點後移
+                    // 偏移量跟 (理想 - 實際) 成正比
+                    const deficit = maxThickness - currentThickness;
+                    focalPointX = retinaX + deficit * 8; 
+                    rayColor = "#EF4444"; // 紅色 (模糊)
+                }
+            }
+
+            // 加上老花眼鏡 (凸透鏡) 輔助
+            if (viewDistance === 'near' && hasGlasses) {
+                // 眼鏡提供額外屈光力，將焦點拉回視網膜
+                focalPointX = retinaX;
+                rayColor = "#34D399";
+            }
+
+            // 視覺化晶狀體路徑 (根據厚度變化)
+            // 使用 Q 曲線模擬晶狀體鼓起
+            // 上下頂點固定 Y=35, Y=115. 中心 X=170.
+            // 控制點 X 隨厚度變化
+            const lensPath = `M 170 35 Q ${170 + currentThickness} 75 170 115 Q ${170 - currentThickness} 75 170 35 Z`;
+
+            // 光線起點與路徑
+            // 看遠：平行光 (Y=45, Y=105)
+            // 看近：發散光 (從 X=0, Y=75 出發，到達晶狀體/眼鏡)
+            const startY_Top = viewDistance === 'far' ? 45 : 75;
+            const startY_Bottom = viewDistance === 'far' ? 105 : 75;
+            const lensEntryX = hasGlasses ? 135 : 170;
+            
+            // 眼鏡參數 (凸透鏡)
+            const glassPath = `M 135 35 Q 145 75 135 115 L 130 115 Q 140 75 130 35 Z`;
+
+            return (
+                <div className="w-full bg-slate-900 rounded-xl p-4 shadow-inner overflow-hidden relative" style={{ height: '240px' }}>
+                    <svg viewBox="0 0 350 150" className="w-full h-full">
+                        {/* 眼球 */}
+                        <ellipse cx="230" cy="75" rx="65" ry="65" fill="#f1f5f9" stroke="#94a3b8" strokeWidth="2" />
+                        <path d="M 175 75 Q 165 25 230 10" fill="none" stroke="#cbd5e1" strokeWidth="1" opacity="0.5" />
+                        <path d="M 175 75 Q 165 125 230 140" fill="none" stroke="#cbd5e1" strokeWidth="1" opacity="0.5" />
+                        <path d="M 285 45 A 60 60 0 0 1 285 105" fill="none" stroke="#ef4444" strokeWidth="3" opacity="0.8" />
+                        <text x="315" y="78" fill="#ef4444" fontSize="10" fontWeight="bold">視網膜</text>
+
+                        {/* 晶狀體 (動態形狀) */}
+                        <path d={lensPath} fill="#93c5fd" opacity="0.9" stroke="#3b82f6" strokeWidth="1" />
+
+                        {/* 睫狀肌示意 (上下兩塊，隨距離移動模擬收縮) */}
+                        {/* 放鬆(看遠): 離得遠 / 收縮(看近): 靠得近 */}
+                        <rect x="162" y={viewDistance === 'near' ? 20 : 10} width="16" height="10" rx="2" fill="#fca5a5" />
+                        <rect x="162" y={viewDistance === 'near' ? 120 : 130} width="16" height="10" rx="2" fill="#fca5a5" />
+                        {/* 懸韌帶 (連接肌肉與晶狀體) */}
+                        <line x1="170" y1={viewDistance === 'near' ? 30 : 20} x2="170" y2="35" stroke="#94a3b8" strokeWidth="1" />
+                        <line x1="170" y1={viewDistance === 'near' ? 120 : 130} x2="170" y2="115" stroke="#94a3b8" strokeWidth="1" />
+                        
+                        <text x="190" y="25" fill="#fca5a5" fontSize="8">睫狀肌</text>
+
+                        {/* 老花眼鏡 */}
+                        {hasGlasses && (
+                            <g>
+                                <path d={glassPath} fill="#bae6fd" stroke="#60a5fa" strokeWidth="1" opacity="0.8" />
+                                <text x="130" y="25" fill="#60a5fa" fontSize="8" textAnchor="middle">老花鏡片(+)</text>
+                            </g>
+                        )}
+
+                        {/* 光線 */}
+                        <g stroke={rayColor} strokeWidth="2" opacity="0.8">
+                            {/* 上光束 */}
+                            <line x1="0" y1={viewDistance === 'far' ? 45 : 75} x2={hasGlasses ? 135 : 165} y2="45" />
+                            {hasGlasses && <line x1="135" y1="45" x2="165" y2="45" strokeDasharray="2,2" />}
+                            <line x1="165" y1="45" x2={focalPointX} y2="75" />
+
+                            {/* 下光束 */}
+                            <line x1="0" y1={viewDistance === 'far' ? 105 : 75} x2={hasGlasses ? 135 : 165} y2="105" />
+                            {hasGlasses && <line x1="135" y1="105" x2="165" y2="105" strokeDasharray="2,2" />}
+                            <line x1="165" y1="105" x2={focalPointX} y2="75" />
+                        </g>
+                        
+                        {/* 光源點 (看近時) */}
+                        {viewDistance === 'near' && <circle cx="0" cy="75" r="4" fill="white" />}
+
+                        {/* 焦點 */}
+                        <circle cx={focalPointX} cy="75" r="3" fill={rayColor} className="animate-pulse" />
+
+                        <text x="10" y="140" fill="white" fontSize="10">
+                            {viewDistance === 'far' ? '遠處光源 (平行光)' : '近處物體 (發散光)'}
+                        </text>
+                    </svg>
+                </div>
+            );
+        };
+
+        // --- 6. 屈光不正頁面 ---
         const RefractionPage = () => {
             const [eyeCondition, setEyeCondition] = useState(-5);
             const [astigmatism, setAstigmatism] = useState(0); 
@@ -205,15 +332,19 @@
             const [correctAstigmatism, setCorrectAstigmatism] = useState(false); 
             const [correctionType, setCorrectionType] = useState('glasses'); 
             const [scene, setScene] = useState('outdoor');
+            
+            const [controlMode, setControlMode] = useState('diagnosis'); 
+            const [showVertexInfo, setShowVertexInfo] = useState(false);
 
             const d = 0.012;
             let effectiveLensPower = lensPower;
-
             if (correctionType === 'glasses' && lensPower !== 0) {
                 effectiveLensPower = lensPower / (1 - (d * lensPower));
             }
-
             const netError = eyeCondition - effectiveLensPower;
+            
+            const isSpherePerfect = Math.abs(netError) < 0.25;
+            const isAstigmatismFixed = astigmatism === 0 || correctAstigmatism;
             
             const baseBlur = Math.abs(netError); 
             const astigmatismBlur = (!correctAstigmatism ? astigmatism : 0);
@@ -227,15 +358,12 @@
             let StatusIcon = AlertCircle;
 
             if (lensPower !== 0 || correctAstigmatism) {
-                const isSpherePerfect = Math.abs(netError) < 0.25;
-                const isAstigmatismFixed = astigmatism === 0 || correctAstigmatism;
-
                 if (isSpherePerfect && isAstigmatismFixed) {
                     statusText = "完美矯正";
                     statusColor = "text-green-600";
                     StatusIcon = CheckCircle;
                 } else if (astigmatism > 0 && !correctAstigmatism) {
-                    statusText = "殘留散光 (重影)";
+                    statusText = "殘留散光";
                     statusColor = "text-orange-500";
                     StatusIcon = AlertCircle;
                 } else if ((eyeCondition < 0 && netError < -0.25) || (eyeCondition > 0 && netError > 0.25)) {
@@ -251,21 +379,14 @@
 
             const recommendedContact = eyeCondition;
             const recommendedGlasses = eyeCondition / (1 + d * eyeCondition);
-
             const formatDiopter = (val) => {
                 const num = Math.round(val * 4) / 4;
                 const sign = num > 0 ? '+' : '';
                 const degrees = Math.abs(Math.round(num * 100));
-                return {
-                    text: `${sign}${num.toFixed(2)} D`,
-                    degree: `${degrees}度`
-                };
+                return { text: `${sign}${num.toFixed(2)} D`, degree: `${degrees}度` };
             };
-
             const contactDisplay = formatDiopter(recommendedContact);
             const glassesDisplay = formatDiopter(recommendedGlasses);
-
-            const isHighPower = Math.abs(eyeCondition) >= 4;
             const isMyopia = eyeCondition < 0;
             const isHyperopia = eyeCondition > 0;
             const isNormal = Math.abs(eyeCondition) <= 0.5;
@@ -278,13 +399,8 @@
                 : "https://images.unsplash.com/photo-1524758631624-e2822e304c36?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
 
             return (
-                <div className="space-y-6 pb-24">
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-                            <Eye className="text-blue-500 w-6 h-6" />
-                            屈光矯正實驗室
-                        </h2>
-                        
+                <div className="space-y-4 pb-24">
+                    <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
                         <EyeModel 
                             refractiveError={eyeCondition} 
                             lensPower={lensPower} 
@@ -294,255 +410,189 @@
                             effectivePower={effectiveLensPower}
                         />
                         
-                        {isHighPower && (
-                            <div className="mt-4 bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-sm text-indigo-900 animate-fade-in">
-                                <div className="flex items-center gap-2 font-bold mb-1">
-                                    <Calculator className="w-4 h-4" />
-                                    頂點距離換算 (Vertex Distance)
-                                </div>
-                                <p className="mb-2 text-xs opacity-80">
-                                    因為眼鏡距離角膜約 12mm，而隱形眼鏡貼在眼球上(0mm)，高度數時兩者度數會不同。
-                                </p>
-                                <div className="flex justify-between items-center bg-white/60 rounded-lg p-2 text-xs">
-                                    <div className="text-center">
-                                        <div className="text-slate-500">隱眼建議度數</div>
-                                        <div className="font-bold text-lg text-blue-600 leading-none mt-1">{contactDisplay.text}</div>
-                                        <div className="text-[10px] text-blue-400 font-medium">({contactDisplay.degree})</div>
-                                    </div>
-                                    <ArrowRightLeft className="w-4 h-4 text-slate-400" />
-                                    <div className="text-center">
-                                        <div className="text-slate-500">眼鏡建議度數</div>
-                                        <div className="font-bold text-lg text-indigo-600 leading-none mt-1">{glassesDisplay.text}</div>
-                                        <div className="text-[10px] text-indigo-400 font-medium">({glassesDisplay.degree})</div>
-                                    </div>
-                                </div>
-                                <div className="mt-1 text-[10px] text-center text-indigo-400">
-                                    {isMyopia ? "近視眼鏡度數需比隱眼深" : "遠視眼鏡度數需比隱眼淺"}
-                                </div>
+                        <div className="relative w-full h-32 mt-2 rounded-xl overflow-hidden shadow-inner group">
+                            <img 
+                                src={sceneImage} 
+                                className="w-full h-full object-cover transition-all duration-300"
+                                style={{ filter: visualFilter }} 
+                                alt="Simulation"
+                            />
+                            <div className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm">
+                                {statusText} {astigmatism > 0 && !correctAstigmatism ? "(含疊影)" : ""}
                             </div>
-                        )}
-
-                        <div className="mt-6 space-y-8">
-                            <div className="relative border-l-2 border-slate-200 pl-4">
-                                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-300 ring-4 ring-white"></div>
-                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">步驟 1：設定眼睛狀態</h3>
-                                
-                                <div className="mb-4">
-                                    <div className="flex justify-between text-sm font-medium mb-1">
-                                        <span>近視 / 遠視 (角膜所需)</span>
-                                        <span className="text-blue-600 font-bold">
-                                            {eyeCondition > 0 ? '+' : ''}{eyeCondition} D 
-                                            <span className="text-xs ml-1 text-slate-500 font-normal">
-                                                ({eyeCondition === 0 ? "無度數" : `${Math.abs(eyeCondition) * 100}度`})
-                                            </span>
-                                        </span>
-                                    </div>
-                                    <input 
-                                        type="range" min="-10" max="10" step="0.5" 
-                                        value={eyeCondition} 
-                                        onChange={(e) => setEyeCondition(parseFloat(e.target.value))}
-                                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer slider-thumb"
-                                    />
-                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
-                                        <span>高度近視</span>
-                                        <span>正常</span>
-                                        <span>高度遠視</span>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="flex justify-between text-sm font-medium mb-1">
-                                        <span>散光程度</span>
-                                        <span className="text-slate-500 text-xs">{astigmatism === 0 ? "無" : `散光 ${astigmatism*50}度`}</span>
-                                    </div>
-                                    <input 
-                                        type="range" min="0" max="3" step="1" 
-                                        value={astigmatism} 
-                                        onChange={(e) => setAstigmatism(parseInt(e.target.value))}
-                                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer slider-thumb"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className={`relative border-l-2 pl-4 transition-all duration-500 ${(isNormal && astigmatism === 0) ? 'border-slate-100 opacity-50 grayscale' : 'border-blue-200 opacity-100'}`}>
-                                <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full ring-4 ring-white ${(isNormal && astigmatism === 0) ? 'bg-slate-200' : 'bg-blue-500'}`}></div>
-                                <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wide mb-2">步驟 2：選擇矯正工具</h3>
-                                
-                                <div className="flex bg-slate-100 p-1 rounded-lg mb-4">
-                                    <button 
-                                        onClick={() => setCorrectionType('glasses')}
-                                        className={`flex-1 py-2 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2 ${correctionType === 'glasses' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}
-                                    >
-                                        <Glasses className="w-4 h-4" /> 一般眼鏡
-                                    </button>
-                                    <button 
-                                        onClick={() => setCorrectionType('contact')}
-                                        className={`flex-1 py-2 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2 ${correctionType === 'contact' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}
-                                    >
-                                        <Contact className="w-4 h-4" /> 隱形眼鏡
-                                    </button>
-                                </div>
-
-                                <div className="mb-3">
-                                     <div className="flex justify-between text-sm font-medium mb-1">
-                                        <span>鏡片度數</span>
-                                        <span className="text-blue-600 font-bold">
-                                            {lensPower === 0 ? "未配戴" : 
-                                                <React.Fragment>
-                                                    {lensPower > 0 ? '+' : ''}{lensPower} D 
-                                                    <span className="text-xs ml-1 text-slate-500 font-normal">
-                                                        ({Math.abs(lensPower) * 100}度)
-                                                    </span>
-                                                </React.Fragment>
-                                            }
-                                        </span>
-                                    </div>
-                                    <input 
-                                        type="range" 
-                                        min={lensMin} max={lensMax} step="0.25"
-                                        disabled={isNormal}
-                                        value={lensPower} 
-                                        onChange={(e) => setLensPower(parseFloat(e.target.value))}
-                                        className={`w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb ${isNormal ? 'bg-slate-100' : 'bg-gradient-to-r from-blue-100 to-blue-200'}`}
-                                    />
-                                    {correctionType === 'glasses' && lensPower !== 0 && (
-                                        <div className="text-right text-[10px] text-slate-400 mt-1">
-                                            實際抵達角膜效力: {effectiveLensPower.toFixed(2)} D
-                                        </div>
-                                    )}
-                                </div>
-
-                                {astigmatism > 0 && (
-                                    <div className="flex items-center justify-between bg-orange-50 p-3 rounded-lg border border-orange-100">
-                                        <span className="text-sm font-medium text-orange-800">
-                                            {astigmatism*50}度 散光矯正 (柱狀鏡)
-                                        </span>
-                                        <button 
-                                            onClick={() => setCorrectAstigmatism(!correctAstigmatism)}
-                                            className={`relative w-12 h-6 rounded-full transition-colors ${correctAstigmatism ? 'bg-orange-500' : 'bg-slate-300'}`}
-                                        >
-                                            <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${correctAstigmatism ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                                        </button>
-                                    </div>
-                                )}
-                                
-                                {(lensPower !== 0 || correctAstigmatism) && (
-                                    <div className={`mt-3 p-3 rounded-lg text-sm flex items-start gap-2 ${statusText.includes("完美") ? "bg-green-50 text-green-800" : "bg-orange-50 text-orange-800"}`}>
-                                        <StatusIcon className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                        <div>
-                                            <strong>{statusText}</strong>
-                                            {statusText.includes("完美") && "：視野清晰。"}
-                                            {statusText.includes("不足") && (correctionType === 'glasses' && isMyopia ? "：因頂點距離，眼鏡度數需比隱眼更深才能矯正。" : "：度數不足。")}
-                                            {statusText.includes("過度") && (correctionType === 'glasses' && isHyperopia ? "：因頂點距離，眼鏡度數需比隱眼更淺。" : "：度數過深。")}
-                                        </div>
-                                    </div>
-                                )}
+                            <div className="absolute top-2 right-2 flex bg-black/40 rounded-lg p-0.5 backdrop-blur-sm border border-white/20">
+                                <button onClick={() => setScene('outdoor')} className={`p-1 rounded ${scene === 'outdoor' ? 'bg-white text-slate-900' : 'text-white'}`}><Building className="w-3 h-3" /></button>
+                                <button onClick={() => setScene('indoor')} className={`p-1 rounded ${scene === 'indoor' ? 'bg-white text-slate-900' : 'text-white'}`}><Home className="w-3 h-3" /></button>
                             </div>
                         </div>
                     </div>
 
-                    <div className="relative w-full h-48 rounded-2xl overflow-hidden shadow-md group">
-                        <img 
-                            src={sceneImage} 
-                            className="w-full h-full object-cover transition-all duration-300"
-                            style={{ filter: visualFilter }} 
-                            alt="Simulation"
-                        />
-                        
-                        <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
-                            模擬視野 {astigmatism > 0 && !correctAstigmatism ? "(含散光疊影)" : ""}
-                        </div>
-
-                        <div className="absolute top-2 right-2 flex bg-black/40 rounded-lg p-1 backdrop-blur-sm border border-white/20">
+                    <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+                        <div className="flex border-b border-slate-100">
                             <button 
-                                onClick={() => setScene('outdoor')}
-                                className={`p-1.5 rounded-md transition-all ${scene === 'outdoor' ? 'bg-white text-slate-900 shadow' : 'text-white hover:bg-white/20'}`}
-                                title="戶外城市"
+                                onClick={() => setControlMode('diagnosis')}
+                                className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${controlMode === 'diagnosis' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:bg-slate-50'}`}
                             >
-                                <Building className="w-4 h-4" />
+                                <Eye className="w-4 h-4" /> 1. 設定眼睛
                             </button>
                             <button 
-                                onClick={() => setScene('indoor')}
-                                className={`p-1.5 rounded-md transition-all ${scene === 'indoor' ? 'bg-white text-slate-900 shadow' : 'text-white hover:bg-white/20'}`}
-                                title="溫馨室內"
+                                onClick={() => setControlMode('clinic')}
+                                className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${controlMode === 'clinic' ? 'bg-green-50 text-green-600 border-b-2 border-green-600' : 'text-slate-400 hover:bg-slate-50'}`}
                             >
-                                <Home className="w-4 h-4" />
+                                <Glasses className="w-4 h-4" /> 2. 驗光配鏡
                             </button>
                         </div>
 
-                        {statusText.includes("完美") && (
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <div className="bg-green-500/90 text-white px-6 py-2 rounded-full font-bold shadow-xl animate-bounce">
-                                    ✨ 清晰 ✨
+                        <div className="p-5 min-h-[200px]">
+                            {controlMode === 'diagnosis' ? (
+                                <div className="space-y-6 animate-fade-in">
+                                    <div>
+                                        <div className="flex justify-between text-sm font-medium mb-2">
+                                            <span className="flex items-center gap-1 text-slate-700"><ArrowRightLeft className="w-3 h-3"/> 近視 / 遠視</span>
+                                            <span className="text-blue-600 font-bold">
+                                                {eyeCondition > 0 ? '+' : ''}{eyeCondition} D 
+                                                <span className="text-xs ml-1 text-slate-400 font-normal">
+                                                    ({eyeCondition === 0 ? "無度數" : `${Math.abs(eyeCondition) * 100}度`})
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <input 
+                                            type="range" min="-10" max="10" step="0.5" 
+                                            value={eyeCondition} 
+                                            onChange={(e) => setEyeCondition(parseFloat(e.target.value))}
+                                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer slider-thumb"
+                                        />
+                                        <div className="flex justify-between text-[10px] text-slate-400 mt-1 px-1">
+                                            <span>高度近視</span><span>正常</span><span>高度遠視</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between text-sm font-medium mb-2">
+                                            <span className="flex items-center gap-1 text-slate-700"><Layers className="w-3 h-3"/> 散光程度</span>
+                                            <span className="text-slate-500 text-xs">{astigmatism === 0 ? "無" : `散光 ${astigmatism*50}度`}</span>
+                                        </div>
+                                        <input 
+                                            type="range" min="0" max="3" step="1" 
+                                            value={astigmatism} 
+                                            onChange={(e) => setAstigmatism(parseInt(e.target.value))}
+                                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer slider-thumb"
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            ) : (
+                                <div className="space-y-5 animate-fade-in">
+                                    <div className="flex bg-slate-100 p-1 rounded-lg">
+                                        <button 
+                                            onClick={() => setCorrectionType('glasses')}
+                                            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${correctionType === 'glasses' ? 'bg-white shadow text-slate-800' : 'text-slate-400'}`}
+                                        >
+                                            <Glasses className="w-3 h-3" /> 一般眼鏡
+                                        </button>
+                                        <button 
+                                            onClick={() => setCorrectionType('contact')}
+                                            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${correctionType === 'contact' ? 'bg-white shadow text-slate-800' : 'text-slate-400'}`}
+                                        >
+                                            <Contact className="w-3 h-3" /> 隱形眼鏡
+                                        </button>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between text-sm font-medium mb-2">
+                                            <span className="text-slate-700">鏡片度數</span>
+                                            <span className="text-blue-600 font-bold">
+                                                {lensPower === 0 ? "未配戴" : 
+                                                    <span>{lensPower > 0 ? '+' : ''}{lensPower} D <span className="text-xs font-normal text-slate-400">({Math.abs(lensPower) * 100}度)</span></span>
+                                                }
+                                            </span>
+                                        </div>
+                                        <input 
+                                            type="range" 
+                                            min={lensMin} max={lensMax} step="0.25"
+                                            disabled={isNormal}
+                                            value={lensPower} 
+                                            onChange={(e) => setLensPower(parseFloat(e.target.value))}
+                                            className={`w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb ${isNormal ? 'bg-slate-100' : 'bg-gradient-to-r from-blue-100 to-blue-200'}`}
+                                        />
+                                    </div>
+
+                                    {astigmatism > 0 && (
+                                        <div 
+                                            onClick={() => setCorrectAstigmatism(!correctAstigmatism)}
+                                            className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${correctAstigmatism ? 'bg-orange-50 border-orange-200' : 'bg-white border-slate-200'}`}
+                                        >
+                                            <span className="text-sm font-medium text-slate-700">矯正散光 ({astigmatism*50}度)</span>
+                                            <div className={`w-10 h-5 rounded-full relative transition-colors ${correctAstigmatism ? 'bg-orange-500' : 'bg-slate-300'}`}>
+                                                <div className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-transform ${correctAstigmatism ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="border-t border-slate-100 pt-2">
+                                        <button 
+                                            onClick={() => setShowVertexInfo(!showVertexInfo)}
+                                            className="flex items-center justify-between w-full text-xs text-slate-400 hover:text-slate-600 py-1"
+                                        >
+                                            <span className="flex items-center gap-1"><Calculator className="w-3 h-3"/> 頂點距離換算建議</span>
+                                            {showVertexInfo ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                        </button>
+                                        
+                                        {/* 頂點距離資訊永遠存在，只是用 CSS 隱藏/顯示，或保留在 DOM 中 */}
+                                        <div className={`mt-2 bg-slate-50 rounded-lg p-3 text-xs animate-fade-in ${showVertexInfo ? 'block' : 'hidden'}`}>
+                                            <p className="mb-2 text-slate-500">眼鏡距角膜 12mm，隱眼貼合角膜 (0mm)，高度數時需換算。</p>
+                                            <div className="grid grid-cols-2 gap-2 text-center">
+                                                <div className="bg-white p-1 rounded border border-slate-100">
+                                                    <div className="text-slate-400 scale-90">隱眼建議</div>
+                                                    <div className="font-bold text-blue-600">{contactDisplay.text}</div>
+                                                </div>
+                                                <div className="bg-white p-1 rounded border border-slate-100">
+                                                    <div className="text-slate-400 scale-90">眼鏡建議</div>
+                                                    <div className="font-bold text-indigo-600">{glassesDisplay.text}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             );
         };
 
-        // --- 6. 老花眼頁面 ---
+        // --- 7. 老花眼頁面 (更新後) ---
         const PresbyopiaPage = () => {
             const [age, setAge] = useState(20);
-            const [viewDistance, setViewDistance] = useState('near'); // near, far
-            const [hasReadingGlasses, setHasReadingGlasses] = useState(false); // 配戴老花眼鏡
+            const [viewDistance, setViewDistance] = useState('near');
+            const [hasReadingGlasses, setHasReadingGlasses] = useState(false);
 
-            // 模擬晶狀體彈性：年齡越大，彈性越差
             const elasticity = Math.max(0, 1 - (age - 20) / 40); 
-            
-            // 晶狀體厚度模擬
-            const targetThickness = viewDistance === 'near' ? 20 : 10;
-            const currentThickness = viewDistance === 'near' 
-                ? 10 + (10 * elasticity) // 隨彈性變厚
-                : 10; 
+            const needsAccommodation = viewDistance === 'near';
+            const canAccommodate = elasticity >= 0.3;
+            const isBlurry = needsAccommodation && !canAccommodate && !hasReadingGlasses;
 
-            // 模糊判斷：如果是看近 + 彈性差 + 沒戴眼鏡 = 模糊
-            // 如果戴了眼鏡，老花眼鏡(凸透鏡)會補償調節力，所以變清晰
-            const isBlurry = viewDistance === 'near' && elasticity < 0.3 && !hasReadingGlasses;
-
-            // 當切換到遠距離，自動拿掉老花眼鏡 (模擬單焦眼鏡看遠會模糊或不需配戴)
             useEffect(() => {
                 if (viewDistance === 'far') setHasReadingGlasses(false);
             }, [viewDistance]);
 
             return (
                 <div className="space-y-6 pb-20">
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                        <h2 className="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
+                        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
                             <BookOpen className="text-orange-500 w-6 h-6" />
                             老花眼：失去的調節力
                         </h2>
                         
-                        <div className="relative h-40 bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden mb-4">
-                            <div className="relative flex flex-col items-center">
-                                <div className={`w-4 h-8 bg-pink-400 rounded transition-all duration-500 ${viewDistance === 'near' ? 'translate-y-2' : ''}`}></div>
-                                <div className="h-4 w-[1px] bg-slate-400"></div>
-                                <div 
-                                    className="bg-blue-300 border-2 border-blue-400 rounded-[50%] transition-all duration-500 shadow-lg backdrop-blur-md"
-                                    style={{
-                                        width: '60px',
-                                        height: `${currentThickness * 3}px` 
-                                    }}
-                                ></div>
-                                <div className="h-4 w-[1px] bg-slate-400"></div>
-                                <div className={`w-4 h-8 bg-pink-400 rounded transition-all duration-500 ${viewDistance === 'near' ? '-translate-y-2' : ''}`}></div>
+                        {/* 使用新的老花眼專用模型 */}
+                        <PresbyopiaEyeModel 
+                            age={age}
+                            viewDistance={viewDistance}
+                            hasGlasses={hasReadingGlasses}
+                            isBlurry={isBlurry}
+                        />
+                    </div>
 
-                                {hasReadingGlasses && (
-                                    <div className="absolute -left-12 top-1/2 -translate-y-1/2 w-3 h-16 bg-blue-200/50 border border-blue-400 rounded-full animate-fade-in">
-                                        <span className="absolute -top-6 left-0 w-full text-center text-[10px] text-blue-600 font-bold whitespace-nowrap">老花鏡片(+)</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="absolute right-4 top-4 text-xs text-slate-500">
-                                晶狀體狀態: <br/>
-                                <span className="font-bold text-slate-800">
-                                    {viewDistance === 'far' ? '放鬆 (看遠)' : (isBlurry ? '僵硬 (無法對焦)' : '變厚 (對焦成功)')}
-                                </span>
-                            </div>
-                        </div>
-
+                    <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-5">
                         <div className="space-y-6">
                             <div>
                                 <label className="flex justify-between text-sm font-medium mb-2">
@@ -564,53 +614,60 @@
                             <div className="flex gap-2">
                                 <button 
                                     onClick={() => setViewDistance('far')}
-                                    className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 border ${viewDistance === 'far' ? 'bg-slate-800 text-white' : 'bg-white'}`}>
+                                    className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 border transition-all ${viewDistance === 'far' ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
                                     <Mountain className="w-4 h-4" /> 看遠處風景
                                 </button>
                                 <button 
                                     onClick={() => setViewDistance('near')}
-                                    className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 border ${viewDistance === 'near' ? 'bg-orange-500 text-white' : 'bg-white'}`}>
+                                    className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 border transition-all ${viewDistance === 'near' ? 'bg-orange-500 text-white' : 'bg-white text-slate-600 hover:bg-orange-50'}`}>
                                     <Book className="w-4 h-4" /> 看手機/書本
                                 </button>
                             </div>
 
-                            <div className={`p-4 rounded-xl border transition-all ${viewDistance === 'near' && elasticity < 0.3 ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100 opacity-50'}`}>
+                            <div 
+                                onClick={() => viewDistance === 'near' && elasticity < 0.3 && setHasReadingGlasses(!hasReadingGlasses)}
+                                className={`p-4 rounded-xl border transition-all cursor-pointer ${viewDistance === 'near' && elasticity < 0.3 ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100 opacity-50 pointer-events-none'}`}
+                            >
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="font-bold text-sm text-slate-700 flex items-center gap-2">
                                         <Glasses className="w-4 h-4" /> 配戴老花眼鏡
                                     </span>
-                                    <button 
-                                        onClick={() => setHasReadingGlasses(!hasReadingGlasses)}
-                                        disabled={viewDistance !== 'near' || elasticity >= 0.3}
-                                        className={`relative w-12 h-6 rounded-full transition-colors ${hasReadingGlasses ? 'bg-blue-600' : 'bg-slate-300'}`}
-                                    >
+                                    <div className={`relative w-12 h-6 rounded-full transition-colors ${hasReadingGlasses ? 'bg-blue-600' : 'bg-slate-300'}`}>
                                         <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${hasReadingGlasses ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                                    </button>
+                                    </div>
                                 </div>
                                 <p className="text-xs text-slate-500">
-                                    當晶狀體變硬無法對焦近物時，使用<strong>凸透鏡（單焦老花眼鏡）</strong>可以幫助匯聚光線，看清文字。
+                                    當晶狀體變硬無法對焦近物時，使用<strong>凸透鏡（單焦老花眼鏡）</strong>可以幫助匯聚光線。
                                 </p>
                             </div>
                         </div>
                     </div>
-
-                    <div className="bg-white p-4 rounded-2xl shadow-sm relative overflow-hidden h-64 flex items-center justify-center">
-                            <img 
-                            src={viewDistance === 'near' ? "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" : "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"}
-                            className="absolute inset-0 w-full h-full object-cover transition-all duration-700"
+                    
+                    {/* 視覺模擬圖 */}
+                    <div className="relative w-full h-48 rounded-2xl overflow-hidden shadow-md">
+                        <img 
+                            src={viewDistance === 'near' ? "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" : "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"}
+                            className="w-full h-full object-cover transition-all duration-700"
                             style={{ filter: isBlurry ? 'blur(5px)' : 'blur(0px)' }}
                             alt="Presbyopia Sim"
                         />
+                        <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
+                            模擬視野
+                        </div>
                         {isBlurry && (
-                            <div className="absolute bg-white/90 px-4 py-2 rounded-lg text-center shadow-lg">
-                                <p className="text-red-500 font-bold text-lg">看不清楚！</p>
-                                <p className="text-xs text-slate-600">請嘗試配戴老花眼鏡</p>
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
+                                <div className="bg-white/90 px-4 py-2 rounded-lg text-center shadow-lg">
+                                    <p className="text-red-500 font-bold text-lg">看不清楚！</p>
+                                    <p className="text-xs text-slate-600">晶狀體硬化，無法調節</p>
+                                </div>
                             </div>
                         )}
                         {!isBlurry && viewDistance === 'near' && hasReadingGlasses && (
-                             <div className="absolute bg-blue-600/90 text-white px-4 py-2 rounded-lg text-center shadow-lg">
-                                <p className="font-bold">清晰！</p>
-                                <p className="text-xs opacity-90">老花眼鏡輔助對焦</p>
+                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="bg-blue-600/90 text-white px-4 py-2 rounded-lg text-center shadow-lg animate-fade-in">
+                                    <p className="font-bold">清晰！</p>
+                                    <p className="text-xs opacity-90">老花眼鏡輔助對焦</p>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -618,7 +675,7 @@
             )
         }
 
-        // --- 7. 多焦點頁面 ---
+        // --- 8. 多焦點頁面 ---
         const ProgressivePage = () => {
             const [headTilt, setHeadTilt] = useState(50); 
             const [eyePosition, setEyePosition] = useState(50);
@@ -777,7 +834,7 @@
             )
         }
 
-        // --- 8. 特殊鏡片頁面 ---
+        // --- 9. 特殊鏡片頁面 ---
         const FiltersPage = () => {
             const [activeFilter, setActiveFilter] = useState('none'); 
 
@@ -903,7 +960,7 @@
             )
         }
 
-        // --- 9. 主應用程式 ---
+        // --- 10. 主應用程式 ---
         const App = () => {
             const [activeTab, setActiveTab] = useState('refraction');
 
