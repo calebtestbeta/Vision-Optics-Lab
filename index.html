@@ -210,11 +210,19 @@ const RefractionPage = () => {
     const recommendedContact = eyeCondition;
     const recommendedGlasses = eyeCondition / (1 + d * eyeCondition);
 
-    // 格式化顯示
+    // 格式化顯示 (包含度數)
     const formatDiopter = (val) => {
         const num = Math.round(val * 4) / 4; // Round to nearest 0.25
-        return num > 0 ? `+${num.toFixed(2)}` : `${num.toFixed(2)}`;
+        const sign = num > 0 ? '+' : '';
+        const degrees = Math.abs(Math.round(num * 100));
+        return {
+            text: `${sign}${num.toFixed(2)} D`,
+            degree: `${degrees}度`
+        };
     };
+
+    const contactDisplay = formatDiopter(recommendedContact);
+    const glassesDisplay = formatDiopter(recommendedGlasses);
 
     const isHighPower = Math.abs(eyeCondition) >= 4;
 
@@ -260,12 +268,14 @@ const RefractionPage = () => {
                         <div className="flex justify-between items-center bg-white/60 rounded-lg p-2 text-xs">
                             <div className="text-center">
                                 <div className="text-slate-500">隱眼建議度數</div>
-                                <div className="font-bold text-lg text-blue-600">{formatDiopter(recommendedContact)}</div>
+                                <div className="font-bold text-lg text-blue-600 leading-none mt-1">{contactDisplay.text}</div>
+                                <div className="text-[10px] text-blue-400 font-medium">({contactDisplay.degree})</div>
                             </div>
                             <ArrowRightLeft className="w-4 h-4 text-slate-400" />
                             <div className="text-center">
                                 <div className="text-slate-500">眼鏡建議度數</div>
-                                <div className="font-bold text-lg text-indigo-600">{formatDiopter(recommendedGlasses)}</div>
+                                <div className="font-bold text-lg text-indigo-600 leading-none mt-1">{glassesDisplay.text}</div>
+                                <div className="text-[10px] text-indigo-400 font-medium">({glassesDisplay.degree})</div>
                             </div>
                         </div>
                         <div className="mt-1 text-[10px] text-center text-indigo-400">
@@ -283,7 +293,12 @@ const RefractionPage = () => {
                         <div className="mb-4">
                             <div className="flex justify-between text-sm font-medium mb-1">
                                 <span>近視 / 遠視 (角膜所需)</span>
-                                <span className="text-blue-600 font-bold">{eyeCondition} D</span>
+                                <span className="text-blue-600 font-bold">
+                                    {eyeCondition > 0 ? '+' : ''}{eyeCondition} D 
+                                    <span className="text-xs ml-1 text-slate-500 font-normal">
+                                        ({eyeCondition === 0 ? "無度數" : `${Math.abs(eyeCondition) * 100}度`})
+                                    </span>
+                                </span>
                             </div>
                             <input 
                                 type="range" min="-10" max="10" step="0.5" 
@@ -335,7 +350,16 @@ const RefractionPage = () => {
                         <div className="mb-3">
                              <div className="flex justify-between text-sm font-medium mb-1">
                                 <span>鏡片度數</span>
-                                <span className="text-blue-600 font-bold">{lensPower === 0 ? "未配戴" : `${lensPower > 0 ? '+' : ''}${lensPower} D`}</span>
+                                <span className="text-blue-600 font-bold">
+                                    {lensPower === 0 ? "未配戴" : 
+                                        <>
+                                            {lensPower > 0 ? '+' : ''}{lensPower} D 
+                                            <span className="text-xs ml-1 text-slate-500 font-normal">
+                                                ({Math.abs(lensPower) * 100}度)
+                                            </span>
+                                        </>
+                                    }
+                                </span>
                             </div>
                             <input 
                                 type="range" 
